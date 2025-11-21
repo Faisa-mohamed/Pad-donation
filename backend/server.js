@@ -7,14 +7,15 @@ import { Server } from "socket.io";
 
 import requestRoutes from "./routes/requestRoutes.js";
 import donationRoutes from "./routes/donationRoutes.js";
-import authRoutes from "./routes/authRoutes.js"; // ✅ Add auth routes
+import authRoutes from "./routes/authRoutes.js";
 
 dotenv.config();
 
 const app = express();
 const server = http.createServer(app);
 
-const allowedOrigins = ["http://localhost:5173"];
+// TEMPORARY: allow all origins for Render testing
+const allowedOrigins = ["*"];
 
 const io = new Server(server, {
   cors: {
@@ -27,18 +28,23 @@ const io = new Server(server, {
 app.use(express.json());
 app.use(cors({ origin: allowedOrigins, credentials: true }));
 
-// Routes
+// Test Route (Render needs this!)
+app.get("/", (req, res) => {
+  res.send("Backend is running ✔️");
+});
+
+// API Routes
 app.use("/api/requests", requestRoutes(io));
 app.use("/api/donations", donationRoutes(io));
-app.use("/api/auth", authRoutes); // ✅ Auth routes
+app.use("/api/auth", authRoutes);
 
-// MongoDB connection
+// MongoDB Connection
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => console.log("✅ MongoDB Connected"))
   .catch((err) => console.error("❌ MongoDB Error:", err));
 
-// Socket.io connection
+// Socket.io Events
 io.on("connection", (socket) => {
   console.log("🟢 Client connected:", socket.id);
 
@@ -47,6 +53,6 @@ io.on("connection", (socket) => {
   });
 });
 
-// Start server
+// Start Server
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
